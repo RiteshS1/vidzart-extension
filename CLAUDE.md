@@ -27,17 +27,21 @@ the user's machine. Distributed **from source** for now (not on the Chrome Web S
 
 ## Tech stack
 
-Verified with `npm view` on 2026-10-11. Re-check when scaffolding.
+Installed versions are pinned in `package.json` / `pnpm-lock.yaml` (scaffolded 2026-10-11).
 
-- **WXT 0.21** (extension framework: file-based entrypoints, manifest generation, dev reload)
-- **React 19.3** for the popup and extension pages
-- **TypeScript** strict (7.0.2 is latest; confirm WXT supports it, else latest 5.x)
+- **WXT 0.21** (extension framework: file-based entrypoints, manifest generation, dev reload;
+  builds with Vite). The manifest is **generated** from `wxt.config.ts` + entrypoint files, so
+  there's no hand-written `manifest.json`.
+- **React 19.3** for the popup and extension pages (`@wxt-dev/module-react`)
+- **TypeScript 5.9** strict (WXT's template pins `^5`; `strict` comes from `.wxt/tsconfig.json`,
+  which `wxt prepare` generates and our `tsconfig.json` extends)
 - A small zip library for writing `.vidz` (choose at scaffold time, e.g. fflate)
 - **pnpm**
 
-## Planned entrypoints (WXT)
+## Entrypoints (WXT)
 
-Not scaffolded yet. Target layout:
+Scaffolded so far: `popup/` (placeholder) and `background.ts` (logs on start). Chrome-only (we
+dropped WXT's Firefox scripts, since `tabCapture`/`offscreen` are Chrome APIs). Target layout:
 
 ```
 entrypoints/
@@ -92,6 +96,9 @@ lib/
 | `scripting` | Inject the event-logger content script into that tab when the user presses Record (`chrome.scripting.executeScript`). Works with the `activeTab` grant. |
 | `tabCapture` | Get a media stream id for the tab's video + audio (`chrome.tabCapture.getMediaStreamId`). |
 | `offscreen` | Create the offscreen document. MV3 service workers have no DOM/`MediaRecorder`, so recording must run in a hidden document. |
+
+Today the manifest requests **none** of these. Each one is added in `wxt.config.ts` only when the
+code that uses it lands (Phase 4).
 
 **Deliberately not requested:**
 
@@ -275,8 +282,16 @@ type Segment =
 
 ## Commands
 
-To be filled in once WXT is scaffolded (`pnpm dev` opens Chrome with the extension loaded,
-`pnpm build` writes `.output/chrome-mv3/`, `pnpm typecheck`).
+```sh
+pnpm install      # also runs `wxt prepare` (generates .wxt/ types + tsconfig)
+pnpm dev          # opens a Chrome window with the extension loaded, auto-reloads on save
+pnpm build        # production build → .output/chrome-mv3/ (load this with "Load unpacked")
+pnpm zip          # zipped build, handy for sharing
+pnpm typecheck    # tsc --noEmit
+```
+
+After `pnpm build`, check `.output/chrome-mv3/manifest.json`: the `permissions` must match the
+table above, and there must be **no `host_permissions`** and no static `content_scripts`.
 
 ## Conventions
 
@@ -293,5 +308,5 @@ To be filled in once WXT is scaffolded (`pnpm dev` opens Chrome with the extensi
 
 **Not planned:** accounts, cloud upload, Chrome Web Store listing (for now: install from source).
 
-**Current phase:** none started. The app's Phases 0–3 come first; this repo is scaffolded with
-WXT next, then waits for Phase 4.
+**Current phase:** WXT scaffolded (placeholder popup, no permissions). Waits for Phase 4; the
+app's Phases 0–3 come first.

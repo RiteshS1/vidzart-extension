@@ -6,7 +6,7 @@ cursor movements and clicks. It saves both as a `.vidz` project that you open in
 editor (companion repo **vidzart-app**), which uses the click log to add smooth automatic zooms
 and cursor effects.
 
-> **Status:** pre-alpha. Docs only, no code yet.
+> **Status:** pre-alpha. The extension skeleton builds and loads, but recording isn't implemented yet.
 
 ## Privacy
 
@@ -18,8 +18,7 @@ and cursor effects.
 
 ## Install from source
 
-Vidzart isn't on the Chrome Web Store, so you build and load it yourself. These steps will work
-once the extension is scaffolded:
+Vidzart isn't on the Chrome Web Store, so you build and load it yourself:
 
 1. Install [Node.js](https://nodejs.org) and [pnpm](https://pnpm.io).
 2. Clone this repo and install dependencies:

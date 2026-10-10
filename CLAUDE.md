@@ -276,10 +276,11 @@ type Segment =
 - Positions and sizes are **normalized** (0–1 of the source frame, or a fraction of the output's
   shorter side), so a project renders the same at 720p and 4K.
 - `id` is a random unique string (e.g. `crypto.randomUUID()`).
-- `source.duration` must be **measured**, not read from the file header: WebM files written by
-  `MediaRecorder` have no duration in their header (a `<video>` reports `Infinity`). The
-  recorder uses its own start/stop times; the editor falls back to demuxing (Mediabunny) to
-  find the last frame's timestamp.
+- `source.duration` must be **measured**, not trusted from the file header: WebM files written by
+  `MediaRecorder` may have no duration (older Chrome, other browsers, or a recording cut short
+  by a crash; a `<video>` then reports `Infinity`). Chrome 154 does write it, but we don't rely
+  on that. The recorder uses its own start/stop times; the editor falls back to demuxing
+  (Mediabunny) to find the last frame's timestamp.
 - **Output time ≠ source time.** Trims remove time and speed segments stretch it. The editor
   keeps one mapping function `sourceToOutput(t)` / `outputToSource(t)` and everything (timeline,
   preview, export) goes through it.

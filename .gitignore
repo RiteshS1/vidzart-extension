@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# WXT build output & generated files
+.output/
+.wxt/
+*.tsbuildinfo
+
+# env files
+.env*
+
+# test recordings / projects (large binaries)
+*.vidz
+*.webm
+*.mp4
+
+# logs & OS junk
+*.log
+.DS_Store

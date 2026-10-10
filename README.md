@@ -40,7 +40,9 @@ Vidzart isn't on the Chrome Web Store, so you build and load it yourself:
 To update: `git pull`, `pnpm build`, then click the reload icon on the Vidzart card in
 `chrome://extensions`.
 
-For development, `pnpm dev` opens a Chrome window with the extension loaded and auto-reloading.
+For development, `pnpm dev` opens a separate Chrome window with the extension loaded and
+auto-reloading. It keeps its own profile in `.wxt/chrome-data/`, and its dev server runs on port
+3010, so it doesn't clash with the web app on 3000.
 
 ## Support
 

@@ -2,7 +2,7 @@
   "name": "vidzart-extension",
   "description": "Vidzart Chrome extension: records a tab plus cursor/click events into a .vidz project.",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -23,5 +23,8 @@
     "web-ext": "^10.5.0",
     "wxt": "^0.21.3"
   },
-  "packageManager": "pnpm@10.30.3"
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=20.9.0"
+  }
 }

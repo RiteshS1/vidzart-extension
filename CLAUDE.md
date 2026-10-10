@@ -35,7 +35,7 @@ Installed versions are pinned in `package.json` / `pnpm-lock.yaml` (scaffolded 2
 - **React 19.3** for the popup and extension pages (`@wxt-dev/module-react`)
 - **TypeScript 5.9** strict (WXT's template pins `^5`; `strict` comes from `.wxt/tsconfig.json`,
   which `wxt prepare` generates and our `tsconfig.json` extends)
-- A small zip library for writing `.vidz` (choose at scaffold time, e.g. fflate)
+- A small zip library for writing `.vidz` (choose in Phase 4, e.g. fflate)
 - **pnpm**
 
 ## Entrypoints (WXT)
@@ -125,7 +125,8 @@ never modified. Edits live in `project.json`, and the final video is rendered fr
 ```
 my-demo.vidz  (zip)
 ├── manifest.json     required. Read this first.
-├── video.webm        required. The raw recording (or video.mp4 for imported files)
+├── video.webm        required. The raw recording: video.webm or video.mp4, whatever
+│                     the recorder or the imported file produced
 ├── events.json       optional. Cursor/click log; missing for plain imported videos
 ├── project.json      required. Edit settings + segments
 └── assets/           optional. e.g. a custom background image
@@ -235,7 +236,7 @@ changes CSS px too, which is why `resize` events carry `devicePixelRatio`.
 interface VidzProject {
   version: 1;
   source: {
-    duration: number;        // ms
+    duration: number;        // ms, measured by the writer (see note below)
     width: number;           // decoded video px
     height: number;
     fps: number;             // nominal; recordings are often variable frame rate
@@ -275,6 +276,10 @@ type Segment =
 - Positions and sizes are **normalized** (0–1 of the source frame, or a fraction of the output's
   shorter side), so a project renders the same at 720p and 4K.
 - `id` is a random unique string (e.g. `crypto.randomUUID()`).
+- `source.duration` must be **measured**, not read from the file header: WebM files written by
+  `MediaRecorder` have no duration in their header (a `<video>` reports `Infinity`). The
+  recorder uses its own start/stop times; the editor falls back to demuxing (Mediabunny) to
+  find the last frame's timestamp.
 - **Output time ≠ source time.** Trims remove time and speed segments stretch it. The editor
   keeps one mapping function `sourceToOutput(t)` / `outputToSource(t)` and everything (timeline,
   preview, export) goes through it.
@@ -284,7 +289,7 @@ type Segment =
 
 ```sh
 pnpm install      # also runs `wxt prepare` (generates .wxt/ types + tsconfig)
-pnpm dev          # opens a Chrome window with the extension loaded, auto-reloads on save
+pnpm dev          # dev server on :3010 + opens a separate Chrome with the extension loaded
 pnpm build        # production build → .output/chrome-mv3/ (load this with "Load unpacked")
 pnpm zip          # zipped build, handy for sharing
 pnpm typecheck    # tsc --noEmit
@@ -292,6 +297,18 @@ pnpm typecheck    # tsc --noEmit
 
 After `pnpm build`, check `.output/chrome-mv3/manifest.json`: the `permissions` must match the
 table above, and there must be **no `host_permissions`** and no static `content_scripts`.
+
+**Dev mode differs on purpose.** `pnpm dev` builds to `.output/chrome-mv3-dev/`, and WXT adds
+`tabs`, `scripting`, `host_permissions: ["http://localhost/*"]`, a CSP allowing
+`http://localhost:3010` and an `Alt+R` reload command. Those power hot reload and are never in
+the production build. Judge permissions only from the production manifest.
+
+Dev setup details (see `wxt.config.ts`):
+- WXT's dev server is pinned to **port 3010** (`strictPort`) because the Next.js app uses 3000.
+- The dev Chrome uses a **persistent profile** in `.wxt/chrome-data/` (gitignored), so logins on
+  sites you test-record survive restarts. Delete that folder for a clean slate.
+- That Chrome is separate from your everyday one. To test in your own Chrome, `pnpm build` and
+  use **Load unpacked** (see README).
 
 ## Conventions
 

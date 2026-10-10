@@ -3,7 +3,7 @@
 The **recorder** for Vidzart, a free, local-first screen recorder and editor for polished product
 demos and tutorials. The extension records the current tab and, at the same time, logs your
 cursor movements and clicks. It saves both as a `.vidz` project that you open in the Vidzart
-editor (companion repo **vidzart-app**), which uses the click log to add smooth automatic zooms
+editor (companion repo **[vidzart-app](https://github.com/RiteshS1/vidzart-app)**), which uses the click log to add smooth automatic zooms
 and cursor effects.
 
 > **Status:** pre-alpha. The extension skeleton builds and loads, but recording isn't implemented yet.
@@ -23,7 +23,7 @@ Vidzart isn't on the Chrome Web Store, so you build and load it yourself:
 1. Install [Node.js](https://nodejs.org) and [pnpm](https://pnpm.io).
 2. Clone this repo and install dependencies:
    ```sh
-   git clone <this-repo-url> vidzart-extension
+   git clone https://github.com/RiteshS1/vidzart-extension.git
    cd vidzart-extension
    pnpm install
    ```

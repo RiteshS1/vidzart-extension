@@ -5,6 +5,9 @@ node_modules/
 # WXT build output & generated files
 .output/
 .wxt/
+stats.html
+stats-*.json
+web-ext.config.ts
 *.tsbuildinfo
 
 # env files
@@ -18,3 +21,4 @@ node_modules/
 # logs & OS junk
 *.log
 .DS_Store
+.idea

@@ -4,6 +4,7 @@ node_modules/
 
 # WXT build output & generated files
 .output/
+dist/
 .wxt/
 stats.html
 stats-*.json

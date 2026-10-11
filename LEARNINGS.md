@@ -16,6 +16,15 @@ coordinate mapping, encoding, browser/extension quirks). Newest entries at the t
 
 ## Log
 
+### 2026-10-12: "I can't find chrome-mv3" in Load unpacked
+- **Symptom:** after `pnpm build`, the folder to pick in chrome://extensions → Load unpacked
+  didn't show up in the file picker.
+- **Cause:** WXT's default output folder is `.output/`. Names starting with a dot are hidden on
+  macOS, including in file pickers.
+- **Fix:** `outDir: 'dist'` in `wxt.config.ts`, so the build is `dist/chrome-mv3/`.
+- **What I learned:** in a picker, ⌘⇧. (Cmd+Shift+period) toggles hidden files. But it's better
+  to put anything a user must find by hand in a visible folder.
+
 ### 2026-10-11: Every recording came out with "no cursor data"
 - **Symptom:** the first e2e test recorded a page, clicked three buttons, and the ready page said
   "no cursor data": `events.json` was missing entirely.
@@ -84,7 +93,7 @@ coordinate mapping, encoding, browser/extension quirks). Newest entries at the t
 - **Fix:** didn't copy it. The event logger will be injected on demand with
   `chrome.scripting.executeScript` after the user clicks Record.
 - **What I learned:** with a framework that *generates* the manifest, always read the built
-  `.output/chrome-mv3/manifest.json`. Permissions can come from files, not just from the
+  `dist/chrome-mv3/manifest.json`. Permissions can come from files, not just from the
   `permissions` array.
 - **Links:** https://wxt.dev/guide/essentials/entrypoints.html,
   https://developer.chrome.com/docs/extensions/develop/concepts/activeTab

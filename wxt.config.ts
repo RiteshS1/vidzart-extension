@@ -27,7 +27,10 @@ export default defineConfig({
       },
     },
   },
-  ...(E2E ? { outDir: '.output/e2e' } : {}),
+  // Builds go to dist/ (WXT's default .output/ is a hidden folder, which the
+  // macOS file picker in chrome://extensions → "Load unpacked" doesn't show).
+  // The test-only e2e copy stays hidden in .output/e2e so nobody loads it by mistake.
+  outDir: E2E ? '.output/e2e' : 'dist',
   dev: {
     server: {
       // WXT's dev server (HMR + extension reload) defaults to the first free

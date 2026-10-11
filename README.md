@@ -50,10 +50,10 @@ Vidzart isn't on the Chrome Web Store, so you build and load it yourself:
    ```sh
    pnpm build
    ```
-   This creates the unpacked extension in `.output/chrome-mv3/`.
+   This creates the unpacked extension in `dist/chrome-mv3/`.
 4. Open `chrome://extensions` in Chrome.
 5. Turn on **Developer mode** (top right).
-6. Click **Load unpacked** and select the `.output/chrome-mv3/` folder.
+6. Click **Load unpacked** and select the `dist/chrome-mv3/` folder.
 7. Pin Vidzart from the puzzle-piece menu so the Record button is one click away.
 
 To update: `git pull`, `pnpm build`, then click the reload icon on the Vidzart card in

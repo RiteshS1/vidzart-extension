@@ -329,7 +329,7 @@ type Segment =
 ```sh
 pnpm install      # also runs `wxt prepare` (generates .wxt/ types + tsconfig)
 pnpm dev          # dev server on :3010 + opens a separate Chrome with the extension loaded
-pnpm build        # production build → .output/chrome-mv3/ (load this with "Load unpacked")
+pnpm build        # production build → dist/chrome-mv3/ (load this with "Load unpacked")
 pnpm zip          # zipped build, handy for sharing
 pnpm typecheck    # tsc --noEmit
 pnpm test         # unit tests (Vitest)
@@ -346,10 +346,10 @@ ignores `--load-extension` since v137, so these tests use Playwright's bundled C
 Round trip with the real editor (opt-in): run the app (`pnpm dev` in vidzart-app), then
 `VIDZART_EDITOR_URL=http://localhost:3000/editor pnpm test:e2e`.
 
-After `pnpm build`, check `.output/chrome-mv3/manifest.json`: the `permissions` must match the
+After `pnpm build`, check `dist/chrome-mv3/manifest.json`: the `permissions` must match the
 table above, and there must be **no `host_permissions`** and no static `content_scripts`.
 
-**Dev mode differs on purpose.** `pnpm dev` builds to `.output/chrome-mv3-dev/`, and WXT adds
+**Dev mode differs on purpose.** `pnpm dev` builds to `dist/chrome-mv3-dev/`, and WXT adds
 `tabs`, `scripting`, `host_permissions: ["http://localhost/*"]`, a CSP allowing
 `http://localhost:3010` and an `Alt+R` reload command. Those power hot reload and are never in
 the production build. Judge permissions only from the production manifest.

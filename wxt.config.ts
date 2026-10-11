@@ -1,5 +1,11 @@
 import { defineConfig } from 'wxt';
 
+// `pnpm test:e2e` builds a separate copy with VIDZART_E2E=1. Automated
+// browsers can't click the toolbar icon, which is what grants activeTab, so
+// that copy instead gets host access to localhost test pages. It's built to
+// .output/e2e/ and never shipped; the real build has no host permissions.
+const E2E = process.env.VIDZART_E2E === '1';
+
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
@@ -11,6 +17,7 @@ export default defineConfig({
     // Deliberately NO host permissions: activeTab (granted by clicking our
     // icon or using our shortcut) covers the one tab being recorded.
     permissions: ['activeTab', 'scripting', 'tabCapture', 'offscreen'],
+    ...(E2E ? { host_permissions: ['http://localhost/*'] } : {}),
     commands: {
       // Start/stop without opening the popup. Using a command also grants
       // activeTab for the current tab, just like clicking the icon.
@@ -20,6 +27,7 @@ export default defineConfig({
       },
     },
   },
+  ...(E2E ? { outDir: '.output/e2e' } : {}),
   dev: {
     server: {
       // WXT's dev server (HMR + extension reload) defaults to the first free

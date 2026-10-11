@@ -351,12 +351,13 @@ Dev setup details (see `wxt.config.ts`):
 ## Roadmap (this repo)
 
 - [x] **Phase 4:** record tab + events, save `.vidz`, open the editor (direct handoff included).
-- [ ] **Phase 5 (support):** make sure the event log has what cursor smoothing / click effects
-      need.
+- [x] **Phase 5 (support):** the event log has what cursor smoothing / click effects need
+      (moves per frame, down/up for press state and ripples, resize for the cursor's size).
 - [ ] **Later:** microphone narration, webcam bubble, re-injecting the logger after
       cross-origin navigation (would need host permissions; undecided).
 
 **Not planned:** accounts, cloud upload, Chrome Web Store listing (for now: install from source).
 
 **Current phase:** Phase 4 done (2026-10-11): recording, event log, ready page, `.vidz`, direct
-handoff, e2e tests. Next is Phase 5 in the app (cursor + click effects).
+handoff, e2e tests. Phase 5 (cursor + click effects) is done in the app; Phase 6 (AI) is
+app-only.

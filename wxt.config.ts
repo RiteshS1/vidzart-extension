@@ -7,10 +7,18 @@ export default defineConfig({
     name: 'Vidzart Recorder',
     description:
       'Record a tab with cursor and click data for the Vidzart editor. Local-only, nothing is uploaded.',
-    // Permissions are added only when the code that needs them lands, each
-    // with a row in CLAUDE.md → Permissions explaining why. Phase 4 adds
-    // activeTab, scripting, tabCapture and offscreen.
-    permissions: [],
+    // Every permission has a row in CLAUDE.md → Permissions saying why.
+    // Deliberately NO host permissions: activeTab (granted by clicking our
+    // icon or using our shortcut) covers the one tab being recorded.
+    permissions: ['activeTab', 'scripting', 'tabCapture', 'offscreen'],
+    commands: {
+      // Start/stop without opening the popup. Using a command also grants
+      // activeTab for the current tab, just like clicking the icon.
+      'toggle-recording': {
+        suggested_key: { default: 'Alt+Shift+R' },
+        description: 'Start or stop recording this tab',
+      },
+    },
   },
   dev: {
     server: {

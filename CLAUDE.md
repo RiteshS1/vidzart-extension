@@ -35,45 +35,58 @@ Installed versions are pinned in `package.json` / `pnpm-lock.yaml` (scaffolded 2
 - **React 19.3** for the popup and extension pages (`@wxt-dev/module-react`)
 - **TypeScript 5.9** strict (WXT's template pins `^5`; `strict` comes from `.wxt/tsconfig.json`,
   which `wxt prepare` generates and our `tsconfig.json` extends)
-- A small zip library for writing `.vidz` (choose in Phase 4, e.g. fflate)
+- **No zip library:** `lib/vidz/zip.ts` is copied verbatim from vidzart-app (dependency-free,
+  native `CompressionStream`). Keep both copies identical.
+- **Vitest** (unit tests in `lib/**/*.test.ts`) and **Playwright** (e2e in `e2e/`, bundled Chromium)
 - **pnpm**
 
 ## Entrypoints (WXT)
 
-Scaffolded so far: `popup/` (placeholder) and `background.ts` (logs on start). Chrome-only (we
-dropped WXT's Firefox scripts, since `tabCapture`/`offscreen` are Chrome APIs). Target layout:
+Chrome-only (we dropped WXT's Firefox scripts, since `tabCapture`/`offscreen` are Chrome APIs).
 
 ```
 entrypoints/
-  popup/           Record / Stop button, status
-  background.ts    service worker: orchestrates recording, holds no important state
-  offscreen/       offscreen document: getUserMedia + MediaRecorder, collects chunks + events
-  recorder.content.ts  event logger, NOT auto-injected; injected via scripting on Record
-  ready/           "Recording ready" extension page: preview, Save .vidz, Open editor
+  popup/               Record / Stop button + timer (opening it grants activeTab)
+  background.ts        service worker: orchestrates recording, keeps NO state in variables
+  offscreen/           hidden document: getUserMedia + MediaRecorder; owns all recording state
+  recorder.content.ts  event logger; registration: 'runtime', injected via scripting on Record
+  ready/               "Recording ready" page: preview, Open in editor, Save .vidz, Delete
 lib/
-  vidz/            .vidz types + zip writer (spec below)
-  messages.ts      typed message definitions between contexts
+  vidz/                .vidz types, zip writer (copied from the app), buildVidz, toEventsJson
+  messages.ts          typed messages between contexts (each names its receiver in `to`)
+  recordings.ts        IndexedDB store of finished recordings (keeps the 5 newest)
+  handoff.ts           "Open in editor": window.open + postMessage of the .vidz File
+  keyCombo.ts          the key privacy rule (shortcuts with Ctrl/Meta/Alt only)
+  clock.ts, mimeType.ts, fileName.ts
+e2e/                   Playwright: records a real tab with the extension loaded
 ```
 
 ## Recording flow
 
-1. User clicks the toolbar icon → popup → **Record**. That click is the user gesture that
-   grants `activeTab` for the current tab.
-2. Background creates the **offscreen document** (`chrome.offscreen.createDocument`, reason
-   `USER_MEDIA`). Only one can exist at a time.
-3. Background calls `chrome.tabCapture.getMediaStreamId({ targetTabId })` and sends the stream id
-   to the offscreen doc.
-4. Offscreen doc calls `navigator.mediaDevices.getUserMedia` with
-   `chromeMediaSource: "tab"` + that id, starts `MediaRecorder`, and records
-   `startedAt = performance.timeOrigin + performance.now()` on the recorder's `start` event.
-5. Background injects the event logger with `chrome.scripting.executeScript` into that tab.
-   It timestamps events with the same formula and **sends them in batches (~every second)** to the
-   extension, so a page navigation loses at most the last batch.
-6. **Stop** → stop recorder + logger → build `events.json`, `project.json` (defaults),
-   `manifest.json` → zip into `.vidz` → store in extension IndexedDB → open the **ready** page.
-7. Ready page: **Save .vidz** (a normal `<a download>`, no `downloads` permission needed) and
-   **Open editor** (opens the app URL; v1 the user then opens the saved file there).
-   Later: direct handoff via `externally_connectable` messaging.
+1. User clicks the toolbar icon → popup → **Record** (or presses **Alt+Shift+R**, the
+   `toggle-recording` command). Either one grants `activeTab` for the current tab.
+2. Background injects the **event logger** (`scripting.executeScript`) and reads the tab's
+   viewport (CSS px + `devicePixelRatio`). If injection fails (chrome:// pages, Web Store), it
+   records anyway, without events, and the ready page says so.
+3. Background creates the **offscreen document** (reason `USER_MEDIA`; only one can exist), gets
+   `tabCapture.getMediaStreamId({ targetTabId })`, and sends the id + viewport + max capture size
+   (viewport × DPR, capped at 4K) to it.
+4. Offscreen doc: `getUserMedia` with `chromeMediaSource: "tab"` + that id → plays the tab audio
+   back (capture mutes the tab) → `MediaRecorder` (WebM/VP9, 1s chunks). `startedAt =
+   epochNow()` on the recorder's `start` event.
+5. The logger stamps events with `epochNow()` and sends them **straight to the offscreen doc**
+   every second (`runtime.sendMessage`; the background ignores them).
+6. **Stop** → background asks the logger for its unsent events (`tabs.sendMessage`) and passes
+   them with the stop command → offscreen stops the recorder, measures the video size with a
+   `<video>` element, converts events to `t = stamp - startedAt`, stores everything in
+   IndexedDB, and tells the background → background closes the offscreen doc and opens
+   `ready.html#<id>`. Closing the recorded tab also ends and saves the recording.
+7. Ready page: builds the `.vidz` up front, then
+   - **Open in editor:** opens `<editor>?from=extension`; the editor posts "ready" to its opener
+     and receives the `.vidz` File via `postMessage` (structured clone works across origins). The
+     editor accepts it only from `chrome-extension://` origins. Editor URL: build-time
+     `WXT_EDITOR_URL` (default `http://localhost:3000/editor`), changeable on the page.
+   - **Save .vidz** / **Download video only:** `<a download>`, no `downloads` permission.
 
 ### MV3 gotchas to keep in mind
 
@@ -81,12 +94,19 @@ lib/
   globals. The offscreen document owns the recording; the SW asks it for status.
 - **Capturing a tab mutes it for the user.** Route the captured audio back to the speakers in
   the offscreen doc (`AudioContext` → `createMediaStreamSource(stream)` → `destination`).
-- **Navigation:** `activeTab` access and the injected script are lost when the tab navigates to
-  another page. v1: the video keeps recording but events stop, so the ready page warns about it.
-  Re-injecting would need broader permissions; decide later.
+- **Messages are JSON-only:** Blobs can't go through `runtime.sendMessage`, which is why
+  recordings go through IndexedDB (shared by all pages of the extension's origin).
+- **Order matters:** the logger is injected before the offscreen doc exists, so anything it sends
+  immediately is lost. It only sends after its first 1s interval, and the viewport comes from the
+  background, not from the logger.
+- **Navigation:** the logger dies with the page. On `tabs.onUpdated` → `complete`, the background
+  re-injects it. If Chrome has revoked `activeTab` by then, the video keeps recording, cursor
+  tracking stops, and the ready page shows a warning with the time.
 - **Cross-origin iframes:** the logger runs in the top frame only, so events inside them are
   not captured.
-- Show recording status with `chrome.action.setBadgeText` (no permission needed).
+- **Resizing the window mid-recording** changes the capture size; the editor maps coordinates
+  with `resize` events, but the video frames change size too. Best avoided in demos.
+- Recording status is shown with `chrome.action.setBadgeText` ("REC"; no permission needed).
 
 ## Permissions
 
@@ -97,8 +117,7 @@ lib/
 | `tabCapture` | Get a media stream id for the tab's video + audio (`chrome.tabCapture.getMediaStreamId`). |
 | `offscreen` | Create the offscreen document. MV3 service workers have no DOM/`MediaRecorder`, so recording must run in a hidden document. |
 
-Today the manifest requests **none** of these. Each one is added in `wxt.config.ts` only when the
-code that uses it lands (Phase 4).
+Also in the manifest (not permissions): `commands.toggle-recording` (Alt+Shift+R).
 
 **Deliberately not requested:**
 
@@ -294,7 +313,19 @@ pnpm dev          # dev server on :3010 + opens a separate Chrome with the exten
 pnpm build        # production build → .output/chrome-mv3/ (load this with "Load unpacked")
 pnpm zip          # zipped build, handy for sharing
 pnpm typecheck    # tsc --noEmit
+pnpm test         # unit tests (Vitest)
+pnpm test:e2e     # builds the e2e variant, then records real tabs in Playwright's Chromium
 ```
+
+**How the e2e tests can record without a click:** automation can't click the toolbar icon, which
+is what grants `activeTab`. So `VIDZART_E2E=1` builds a separate copy to `.output/e2e/` with
+`host_permissions: ["http://localhost/*"]` (for injecting the logger), and Chromium is launched
+with `--allowlisted-extension-id=<id>` (lets `tabCapture` run uninvoked). Branded Google Chrome
+ignores `--load-extension` since v137, so these tests use Playwright's bundled Chromium
+(`pnpm exec playwright install chromium` once). The shipped build is unaffected.
+
+Round trip with the real editor (opt-in): run the app (`pnpm dev` in vidzart-app), then
+`VIDZART_EDITOR_URL=http://localhost:3000/editor pnpm test:e2e`.
 
 After `pnpm build`, check `.output/chrome-mv3/manifest.json`: the `permissions` must match the
 table above, and there must be **no `host_permissions`** and no static `content_scripts`.
@@ -319,12 +350,13 @@ Dev setup details (see `wxt.config.ts`):
 
 ## Roadmap (this repo)
 
-- [ ] **Phase 4:** record tab + events, save `.vidz`, open the editor.
+- [x] **Phase 4:** record tab + events, save `.vidz`, open the editor (direct handoff included).
 - [ ] **Phase 5 (support):** make sure the event log has what cursor smoothing / click effects
       need.
-- [ ] **Later:** direct handoff to the editor via `externally_connectable`.
+- [ ] **Later:** microphone narration, webcam bubble, re-injecting the logger after
+      cross-origin navigation (would need host permissions; undecided).
 
 **Not planned:** accounts, cloud upload, Chrome Web Store listing (for now: install from source).
 
-**Current phase:** WXT scaffolded (placeholder popup, no permissions). Waits for Phase 4; the
-app's Phases 0–3 come first.
+**Current phase:** Phase 4 done (2026-10-11): recording, event log, ready page, `.vidz`, direct
+handoff, e2e tests. Next is Phase 5 in the app (cursor + click effects).

@@ -43,18 +43,11 @@ const round = (n: number) => Math.round(n * 10) / 10;
 function startLogger() {
   let pending: VidzEvent[] = [];
   let pointer = { x: 0, y: 0 };
-  let firstBatch = true;
 
   const send = () => {
-    if (pending.length === 0 && !firstBatch) return;
-    const message: ToOffscreen = {
-      to: 'offscreen',
-      type: 'events',
-      events: pending,
-      ...(firstBatch ? { viewport: viewport() } : {}),
-    };
+    if (pending.length === 0) return;
+    const message: ToOffscreen = { to: 'offscreen', type: 'events', events: pending };
     pending = [];
-    firstBatch = false;
     // Fire and forget: if the extension was reloaded mid-recording there's
     // nobody listening anymore, which isn't worth an error in the page.
     browser.runtime.sendMessage(message).catch(() => {});
@@ -131,7 +124,8 @@ function startLogger() {
   window.addEventListener('scroll', onScroll, options);
   window.addEventListener('resize', onResize, options);
 
-  send(); // first batch: viewport + initial resize event
+  // No immediate send: on the first injection the recorder doesn't exist
+  // yet (the logger starts first), so the first batch goes out after 1s.
   const timer = setInterval(send, FLUSH_MS);
 
   const stop = (): VidzEvent[] => {

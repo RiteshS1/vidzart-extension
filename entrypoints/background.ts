@@ -14,7 +14,7 @@ import {
   type ToLogger,
   type ToOffscreen,
 } from '@/lib/messages';
-import type { VidzEvent } from '@/lib/vidz/types';
+import type { VidzEvent, Viewport } from '@/lib/vidz/types';
 
 const LOGGER_FILE = '/content-scripts/recorder.js';
 const OFFSCREEN_URL = '/offscreen.html';
@@ -90,22 +90,24 @@ async function start(tabId: number, title: string): Promise<Result> {
 
   // 1. Inject the event logger first, so the cursor position right before
   //    the recorder starts is known too.
-  let size: { width: number; height: number } | null = null;
+  let viewport: Viewport | null = null;
   try {
     await browser.scripting.executeScript({ target: { tabId }, files: [LOGGER_FILE] });
     const [result] = await browser.scripting.executeScript({
       target: { tabId },
-      func: () => ({ width: window.innerWidth * devicePixelRatio, height: window.innerHeight * devicePixelRatio }),
+      func: () => ({ width: window.innerWidth, height: window.innerHeight, devicePixelRatio: window.devicePixelRatio }),
     });
-    size = result?.result ?? null;
+    viewport = result?.result ?? null;
   } catch {
     // e.g. chrome:// pages or the Chrome Web Store, where extensions can't run.
     warnings.push("Cursor and clicks couldn't be recorded on this page, so auto zoom won't be available.");
   }
-  if (!size) {
-    const tab = await browser.tabs.get(tabId);
-    size = { width: (tab.width ?? 1920) * 2, height: (tab.height ?? 1080) * 2 };
-  }
+  // Capture at the tab's size in device pixels: as sharp as the screen.
+  // Without the logger, guess from the tab size (CSS px) at 2x.
+  const tab = viewport ? null : await browser.tabs.get(tabId);
+  const size = viewport
+    ? { width: viewport.width * viewport.devicePixelRatio, height: viewport.height * viewport.devicePixelRatio }
+    : { width: (tab?.width ?? 1920) * 2, height: (tab?.height ?? 1080) * 2 };
   const capture = fitWithin(size, MAX_CAPTURE);
 
   try {
@@ -121,6 +123,7 @@ async function start(tabId: number, title: string): Promise<Result> {
       streamId,
       tabId,
       title,
+      viewport,
       maxWidth: capture.width,
       maxHeight: capture.height,
       warnings,
@@ -190,11 +193,11 @@ async function showError(error: string) {
 }
 
 function friendlyCaptureError(message: string): string {
-  if (/Chrome pages cannot be captured|cannot be captured/i.test(message)) {
-    return "Chrome doesn't allow recording this page (browser pages like chrome:// can't be captured). Try a normal website.";
-  }
-  if (/has not been invoked|activeTab/i.test(message)) {
-    return 'Click the Vidzart icon on the tab you want to record, then press Record.';
+  // Chrome's message for both cases is "Extension has not been invoked for
+  // the current page (see activeTab permission). Chrome pages cannot be
+  // captured.", so it can't tell us which one happened.
+  if (/has not been invoked|cannot be captured/i.test(message)) {
+    return "Chrome didn't allow recording this tab. Open the Vidzart popup on the tab you want to record and press Record again. Browser pages (chrome://, the Web Store) can't be recorded.";
   }
   return message;
 }

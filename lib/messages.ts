@@ -32,6 +32,8 @@ export interface StartRecording {
   streamId: string;
   tabId: number;
   title: string;
+  /** The tab's viewport when recording starts; null if it couldn't be read. */
+  viewport: Viewport | null;
   /** Capture size limit in device px, from the tab's viewport. */
   maxWidth: number;
   maxHeight: number;
@@ -45,10 +47,9 @@ export type ToOffscreen =
   | { to: 'offscreen'; type: 'warning'; message: string }
   /**
    * From the logger. `t` is an absolute epochNow() stamp here; the recorder
-   * converts to "ms since start" when saving. `viewport` is sent once, in
-   * the logger's first batch.
+   * converts to "ms since start" when saving.
    */
-  | { to: 'offscreen'; type: 'events'; events: VidzEvent[]; viewport?: Viewport };
+  | { to: 'offscreen'; type: 'events'; events: VidzEvent[] };
 
 export type ToLogger = { to: 'logger'; type: 'stop' };
 

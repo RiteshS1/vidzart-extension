@@ -57,18 +57,15 @@ browser.runtime.onMessage.addListener((message: ToOffscreen, _sender: Browser.ru
       // Events can arrive while getUserMedia is still starting; keep them
       // (they're filtered by time when saving).
       pendingEvents.push(...message.events);
-      if (message.viewport) pendingViewport ??= message.viewport;
       if (session) flushPending(session);
       return;
   }
 });
 
-// Events/viewport that arrive before the session object exists.
+// Events that arrive before the session object exists.
 let pendingEvents: VidzEvent[] = [];
-let pendingViewport: Viewport | null = null;
 function flushPending(s: Session) {
   s.events.push(...pendingEvents);
-  s.viewport ??= pendingViewport;
   pendingEvents = [];
 }
 
@@ -83,7 +80,6 @@ async function start(command: StartRecording): Promise<Result<{ startedAt: numbe
   if (session || starting) return { ok: false, error: 'Already recording.' };
   starting = true;
   pendingEvents = [];
-  pendingViewport = null;
   try {
     const mimeType = pickRecorderMimeType();
     if (!mimeType) throw new Error("This browser can't record video (MediaRecorder unsupported).");
@@ -123,7 +119,7 @@ async function start(command: StartRecording): Promise<Result<{ startedAt: numbe
       tabId: command.tabId,
       title: command.title,
       events: [],
-      viewport: null,
+      viewport: command.viewport,
       warnings: [...command.warnings],
       stopping: false,
     };

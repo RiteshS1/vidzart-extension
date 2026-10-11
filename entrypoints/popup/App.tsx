@@ -72,6 +72,12 @@ function App() {
       <p className="hint">
         Shortcut: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> starts and stops.
       </p>
+      <p className="hint">
+        Free and open source.{' '}
+        <a href="https://buymeacoffee.com/riteshs" target="_blank" rel="noreferrer">
+          Buy me a coffee ☕
+        </a>
+      </p>
     </main>
   );
 }

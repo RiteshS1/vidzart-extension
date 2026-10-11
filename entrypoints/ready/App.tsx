@@ -54,6 +54,9 @@ export default function App() {
     <div className="page">
       <header>
         <strong>Vidzart</strong>
+        <a className="support" href="https://buymeacoffee.com/riteshs" target="_blank" rel="noreferrer">
+          ☕ Buy me a coffee
+        </a>
       </header>
       <main>
         {load.kind === 'loading' && <p className="muted">Loading…</p>}

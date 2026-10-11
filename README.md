@@ -71,7 +71,7 @@ Tests: `pnpm test` (unit) and `pnpm test:e2e` (records real tabs in Playwright's
 
 ## Support
 
-Vidzart is completely free. If you find it helpful, a "Buy me a coffee" link is coming.
+Vidzart is completely free. If you find it helpful, you can [buy me a coffee ☕](https://buymeacoffee.com/riteshs).
 
 ## License
 

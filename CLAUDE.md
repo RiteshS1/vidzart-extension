@@ -274,6 +274,22 @@ interface VidzProject {
     clickEffect: { type: "none" | "ripple" | "pulse"; color: string };
   };
   segments: Segment[];
+  captions?: Captions; // optional (added later without a version bump); absent = none
+}
+
+interface Captions {
+  visible: boolean;
+  language?: string; // BCP 47 tag of the spoken language, e.g. "en"
+  style: {
+    size: number;                // text height, fraction of the output canvas's shorter side
+    position: "bottom" | "top";
+  };
+  cues: {
+    id: string;
+    start: number; end: number;  // source-timeline ms, like segments
+    text: string;
+    words?: { start: number; end: number; text: string }[]; // optional word timings
+  }[];                           // sorted by start, non-overlapping
 }
 
 type Segment =
@@ -300,6 +316,9 @@ type Segment =
   by a crash; a `<video>` then reports `Infinity`). Chrome 154 does write it, but we don't rely
   on that. The recorder uses its own start/stop times; the editor falls back to demuxing
   (Mediabunny) to find the last frame's timestamp.
+- **Captions** live on the source timeline too. Cue parts inside trims aren't shown, and exported
+  subtitle files (SRT/VTT) are mapped to output time. Usually produced by on-device speech
+  recognition in the editor, then edited by the user.
 - **Output time ≠ source time.** Trims remove time and speed segments stretch it. The editor
   keeps one mapping function `sourceToOutput(t)` / `outputToSource(t)` and everything (timeline,
   preview, export) goes through it.

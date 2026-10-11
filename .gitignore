@@ -22,3 +22,7 @@ web-ext.config.ts
 *.log
 .DS_Store
 .idea
+
+# Playwright
+test-results/
+playwright-report/

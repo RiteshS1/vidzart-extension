@@ -143,3 +143,27 @@ test('refuses to start twice', async ({ context, extensionPage, demoUrl }) => {
   }, demoUrl)) as { ok: boolean; error?: string };
   expect(again).toEqual({ ok: false, error: 'Already recording.' });
 });
+
+test('keeps logging after the recorded page navigates', async ({ context, extensionPage, demoUrl }, testInfo) => {
+  const demo = await context.newPage();
+  await demo.goto(demoUrl);
+  await startRecording(extensionPage, demoUrl);
+  await demo.click('#a');
+  await demo.waitForTimeout(1200); // let the batch go out before the page dies
+  await demo.goto(`${demoUrl}?page=2`);
+  await demo.waitForTimeout(500); // background re-injects the logger on "complete"
+  await demo.click('#b');
+  await demo.waitForTimeout(1200);
+
+  const readyPromise = context.waitForEvent('page', (p) => p.url().includes('/ready.html'));
+  await send(extensionPage, { to: 'background', type: 'stop' });
+  const ready = await readyPromise;
+  await expect(ready.getByTestId('recording-facts')).toContainText('2 clicks tracked');
+  const [download] = await Promise.all([ready.waitForEvent('download'), ready.getByRole('link', { name: 'Save .vidz' }).click()]);
+  const file = testInfo.outputPath('nav.vidz');
+  await download.saveAs(file);
+  const entries = await readZip(new Blob([new Uint8Array(readFileSync(file))]));
+  const events = JSON.parse(await entries.get('events.json')!.text()) as VidzEvents;
+  // The new logger announces the viewport with a resize event.
+  expect(events.events.filter((e) => e.type === 'resize').length).toBeGreaterThanOrEqual(2);
+});

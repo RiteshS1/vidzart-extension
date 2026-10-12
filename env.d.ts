@@ -2,6 +2,6 @@
 // Set them in a .env file or the shell, e.g.
 //   WXT_EDITOR_URL=https://example.com/editor pnpm build
 interface ImportMetaEnv {
-  /** The Vidzart editor's URL. Default: http://localhost:3000/editor (the app's `pnpm dev`). */
+  /** The Vidzart editor's URL. Default: https://vidzart.vercel.app/editor (the deployed app). */
   readonly WXT_EDITOR_URL?: string;
 }

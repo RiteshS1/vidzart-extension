@@ -16,7 +16,8 @@ and cursor effects.
 3. Click the icon → **Stop** (or Alt+Shift+R again). A **Recording ready** tab opens with a
    preview and:
    - **Open in editor**: opens the Vidzart editor with the recording already loaded. The editor
-     address defaults to `http://localhost:3000/editor` (the app's `pnpm dev`); change it under
+     address defaults to the hosted editor, `https://vidzart.vercel.app/editor`. To use a local
+     `pnpm dev` instead, set `http://localhost:3000/editor` under
      "Editor address" on that page.
    - **Save .vidz**: the project file (video + cursor/click log) to open in the editor later.
    - **Download video only**: just the raw WebM.

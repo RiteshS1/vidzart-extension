@@ -16,7 +16,7 @@ export const EDITOR_READY = 'vidzart:editor-ready';
 export const OPEN_PROJECT = 'vidzart:open-project';
 
 /** Where the editor lives. Overridable on the ready page (saved per browser). */
-export const DEFAULT_EDITOR_URL: string = import.meta.env.WXT_EDITOR_URL ?? 'http://localhost:3000/editor';
+export const DEFAULT_EDITOR_URL: string = import.meta.env.WXT_EDITOR_URL ?? 'https://vidzart.vercel.app/editor';
 
 const TIMEOUT_MS = 30_000;
 

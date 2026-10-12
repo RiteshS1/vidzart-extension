@@ -30,10 +30,11 @@ test('a recording opens in the real editor with its events', async ({ context, e
   await ready.getByRole('button', { name: 'Open in editor' }).click();
   const editor = await editorPromise;
 
-  // The editor opened the .vidz: file name shown, and Auto zoom (only offered
-  // when there's an event log) finds the two clicks.
+  // The editor opened the .vidz and, like Cursorful, already zoomed in on
+  // the clicks without anyone pressing a button.
   await expect(editor.getByTestId('file-name')).toHaveText(/^demo-page-.*\.vidz$/, { timeout: 30_000 });
-  await editor.getByRole('button', { name: 'Auto zoom' }).click();
-  await expect(editor.getByRole('status')).toHaveText(/Added [12] auto zooms?/);
+  await expect(editor.getByRole('status')).toHaveText(/^Added [12] automatic zooms? · Undo to remove$/);
+  await expect(editor.getByTestId('zoom-block').first()).toBeVisible();
+  await expect(editor.getByTestId('click-count')).toHaveText('2 clicks tracked');
   expect(new URL(editor.url()).search).toBe(''); // ?from=extension removed
 });

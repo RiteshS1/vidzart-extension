@@ -150,7 +150,7 @@ test('still records the video when cursor tracking is impossible', async ({ cont
   const ready = await readyPagePromise;
   await expect(ready.getByTestId('recording-facts')).toContainText('no cursor data');
   await expect(ready.getByText("Cursor and clicks couldn't be recorded on this page")).toBeVisible();
-  await expect(ready.getByRole('link', { name: 'Save .vidz' })).toBeVisible();
+  await expect(ready.getByRole('link', { name: 'Download video' })).toBeVisible();
 });
 
 test('refuses to start twice', async ({ context, extensionPage, demoUrl }) => {

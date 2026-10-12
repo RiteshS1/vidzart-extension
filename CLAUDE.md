@@ -280,6 +280,18 @@ interface VidzProject {
   };
   segments: Segment[];
   captions?: Captions; // optional (added later without a version bump); absent = none
+  audio?: {
+    sourceVolume?: number;        // 0–1, the recording's own sound; default 1
+    music?: {
+      src: string;                // "assets/<file>" inside the .vidz (e.g. assets/music.mp3)
+      name?: string;              // original file name, for display
+      volume: number;             // 0–1
+      fadeInMs: number;
+      fadeOutMs: number;          // at the end of the OUTPUT (or of the music, if it ends first)
+      loop: boolean;              // repeat to cover the whole video
+      duckUnderVoice: boolean;    // turn the music down while someone speaks
+    };
+  };
 }
 
 interface Captions {
@@ -332,6 +344,8 @@ type TextAnimation = "none" | "fade" | "slide-up" | "pop" | "typewriter";
 - `start` / `end` are source-timeline ms, `start < end`.
 - `zoom`, `trim` and `speed` segments must not overlap others **of the same type**. `blur`,
   `text` and `shape` segments may overlap.
+- Background music plays on the OUTPUT timeline from 0:00; its file lives in the zip's `assets/`
+  (stored, not deflated: audio is already compressed) and `src` names it.
 - `filter`, `fade` and `transition` are optional (absent = none). Fades and transitions work in
   OUTPUT time: a transition is centered on each point where trimmed footage was removed.
 - `shape` segments draw themselves on (outlines) or fade in (spotlight dims everything outside

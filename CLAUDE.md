@@ -304,11 +304,26 @@ type Segment =
   | { id: string; type: "speed"; start: number; end: number; rate: number } // 2 = twice as fast
   | { id: string; type: "blur";  start: number; end: number;
       rect: { x: number; y: number; width: number; height: number } }  // normalized 0–1
+  | { id: string; type: "text";  start: number; end: number;
+      text: string;                                   // may contain "\n" line breaks
+      x: number; y: number;                           // center, normalized 0–1 of the OUTPUT canvas
+      style: { font: "sans" | "serif" | "mono" | "rounded";
+               size: number;                          // text height, fraction of the output's shorter side
+               weight: 400 | 600 | 800;
+               color: string;                         // CSS color
+               background?: string;                   // CSS color of a box behind the text, if any
+               align: "left" | "center" | "right" };
+      animation: { in: TextAnimation; out: TextAnimation } }
+
+type TextAnimation = "none" | "fade" | "slide-up" | "pop" | "typewriter";
 ```
 
 - `start` / `end` are source-timeline ms, `start < end`.
-- `zoom`, `trim` and `speed` segments must not overlap others **of the same type**. `blur`
-  segments may overlap.
+- `zoom`, `trim` and `speed` segments must not overlap others **of the same type**. `blur` and
+  `text` segments may overlap.
+- `text` positions are in **output** canvas space (they stay put when a zoom moves the camera);
+  `blur` rects are in **source** frame space (they stick to the recorded content). Fonts are
+  generic families (`sans`, `serif`, `mono`, `rounded`) that each renderer maps to fonts it has.
 - Positions and sizes are **normalized** (0–1 of the source frame, or a fraction of the output's
   shorter side), so a project renders the same at 720p and 4K.
 - `id` is a random unique string (e.g. `crypto.randomUUID()`).

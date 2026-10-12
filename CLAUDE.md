@@ -273,6 +273,7 @@ interface VidzProject {
     shadow: { enabled: boolean; blur: number; opacity: number; offsetY: number }; // blur/offsetY: same unit as padding
     cursor: { visible: boolean; scale: number; smoothing: number; hideWhenIdleMs?: number }; // smoothing 0–1
     clickEffect: { type: "none" | "ripple" | "pulse"; color: string };
+    keystrokes?: { visible: boolean; position: "bottom" | "top" }; // "⌘K" badges from key events; absent = hidden
   };
   segments: Segment[];
   captions?: Captions; // optional (added later without a version bump); absent = none
@@ -315,12 +316,22 @@ type Segment =
                align: "left" | "center" | "right" };
       animation: { in: TextAnimation; out: TextAnimation } }
 
+  | { id: string; type: "shape"; start: number; end: number;
+      kind: "arrow" | "rect" | "ellipse" | "spotlight";
+      rect: { x: number; y: number; width: number; height: number }; // normalized 0–1 of the SOURCE frame;
+                                                      // arrows go from (x, y) to (x + width, y + height),
+                                                      // so width/height may be negative
+      style: { color: string; stroke: number } }      // stroke: fraction of the output's shorter side
+
 type TextAnimation = "none" | "fade" | "slide-up" | "pop" | "typewriter";
 ```
 
 - `start` / `end` are source-timeline ms, `start < end`.
-- `zoom`, `trim` and `speed` segments must not overlap others **of the same type**. `blur` and
-  `text` segments may overlap.
+- `zoom`, `trim` and `speed` segments must not overlap others **of the same type**. `blur`,
+  `text` and `shape` segments may overlap.
+- `shape` segments draw themselves on (outlines) or fade in (spotlight dims everything outside
+  the rect) over their first ~0.4 s and fade out over the last ~0.25 s; like blur, they're in
+  source space and move with zooms.
 - `text` positions are in **output** canvas space (they stay put when a zoom moves the camera);
   `blur` rects are in **source** frame space (they stick to the recorded content). Fonts are
   generic families (`sans`, `serif`, `mono`, `rounded`) that each renderer maps to fonts it has.

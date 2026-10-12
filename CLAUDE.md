@@ -274,6 +274,9 @@ interface VidzProject {
     cursor: { visible: boolean; scale: number; smoothing: number; hideWhenIdleMs?: number }; // smoothing 0–1
     clickEffect: { type: "none" | "ripple" | "pulse"; color: string };
     keystrokes?: { visible: boolean; position: "bottom" | "top" }; // "⌘K" badges from key events; absent = hidden
+    filter?: { preset: "none" | "vivid" | "warm" | "cool" | "mono" | "cinematic"; intensity: number }; // 0–1
+    fade?: { inMs: number; outMs: number };   // fade from/to black at the start/end of the OUTPUT
+    transition?: { type: "none" | "dip-to-black" | "blur" | "zoom-punch"; durationMs: number }; // at every cut
   };
   segments: Segment[];
   captions?: Captions; // optional (added later without a version bump); absent = none
@@ -329,6 +332,8 @@ type TextAnimation = "none" | "fade" | "slide-up" | "pop" | "typewriter";
 - `start` / `end` are source-timeline ms, `start < end`.
 - `zoom`, `trim` and `speed` segments must not overlap others **of the same type**. `blur`,
   `text` and `shape` segments may overlap.
+- `filter`, `fade` and `transition` are optional (absent = none). Fades and transitions work in
+  OUTPUT time: a transition is centered on each point where trimmed footage was removed.
 - `shape` segments draw themselves on (outlines) or fade in (spotlight dims everything outside
   the rect) over their first ~0.4 s and fade out over the last ~0.25 s; like blur, they're in
   source space and move with zooms.

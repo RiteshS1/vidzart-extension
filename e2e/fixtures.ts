@@ -42,6 +42,7 @@ const STUB_EDITOR = `<!doctype html><title>Stub editor</title><pre id="out">wait
   addEventListener('message', async (e) => {
     if (e.data?.type !== 'vidzart:open-project') return;
     const f = e.data.file;
+    window.receivedFile = f;
     document.getElementById('out').textContent = 'got ' + f.name + ' ' + f.size + ' from ' + e.origin;
   });
   opener.postMessage({ type: 'vidzart:editor-ready' }, '*');

@@ -122,8 +122,6 @@ function Ready({ recording, onDeleted }: { recording: StoredRecording; onDeleted
   // Object URLs for the preview and the downloads, freed when we leave.
   const videoUrl = useMemo(() => URL.createObjectURL(recording.video), [recording]);
   useEffect(() => () => URL.revokeObjectURL(videoUrl), [videoUrl]);
-  const vidzUrl = useMemo(() => (vidz ? URL.createObjectURL(vidz) : null), [vidz]);
-  useEffect(() => () => (vidzUrl ? URL.revokeObjectURL(vidzUrl) : undefined), [vidzUrl]);
 
   // Build the .vidz once, up front: a download link needs its URL before
   // the click. It mostly references the stored video, so it's cheap.
@@ -174,15 +172,8 @@ function Ready({ recording, onDeleted }: { recording: StoredRecording; onDeleted
         <button className="primary" disabled={!vidz || handoff.state === 'opening'} onClick={() => void openEditor()}>
           {handoff.state === 'opening' ? 'Opening the editor…' : 'Open in editor'}
         </button>
-        {vidzUrl ? (
-          <a className="button" href={vidzUrl} download={`${baseName}.vidz`}>
-            Save .vidz
-          </a>
-        ) : (
-          <span className="button disabled">{buildError ? 'Save failed' : 'Preparing…'}</span>
-        )}
         <a className="button" href={videoUrl} download={`${baseName}.${videoExt}`}>
-          Download video only
+          Download video
         </a>
         <button
           className="button danger"
@@ -197,10 +188,10 @@ function Ready({ recording, onDeleted }: { recording: StoredRecording; onDeleted
           {handoff.message}
         </p>
       )}
-      {buildError && <p className="error">Couldn't build the .vidz file: {buildError}</p>}
+      {buildError && <p className="error">Couldn't prepare the recording for the editor: {buildError}</p>}
       <p className="muted small">
-        The .vidz holds the video, the cursor/click log and default edit settings. It stays on this computer until you
-        save it; Vidzart keeps your 5 newest recordings here.
+        Open it in the editor to get automatic zooms from your clicks. The recording stays on this computer; Vidzart
+        keeps your 5 newest recordings here.
       </p>
 
       <details className="settings">

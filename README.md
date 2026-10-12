@@ -19,8 +19,7 @@ and cursor effects.
      address defaults to the hosted editor, `https://vidzart.vercel.app/editor`. To use a local
      `pnpm dev` instead, set `http://localhost:3000/editor` under
      "Editor address" on that page.
-   - **Save .vidz**: the project file (video + cursor/click log) to open in the editor later.
-   - **Download video only**: just the raw WebM.
+   - **Download video**: just the raw WebM.
 
 The extension keeps your 5 newest recordings until you save or delete them. Browser pages
 (`chrome://…`, the Chrome Web Store) can't be recorded, and pages where the cursor can't be

@@ -87,7 +87,8 @@ e2e/                   Playwright: records a real tab with the extension loaded
      editor accepts it only from `chrome-extension://` origins. Editor URL: build-time
      `WXT_EDITOR_URL` (default `https://vidzart.vercel.app/editor`), changeable on the page
      (e.g. `http://localhost:3000/editor` while developing the app).
-   - **Save .vidz** / **Download video only:** `<a download>`, no `downloads` permission.
+   - **Download video:** `<a download>`, no `downloads` permission. (There's deliberately no
+     "Save .vidz": the project format is only the invisible handoff to the editor.)
 
 ### MV3 gotchas to keep in mind
 

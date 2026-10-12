@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import { readZip } from '../lib/vidz/zip';
 import type { VidzEvents, VidzManifest, VidzProject } from '../lib/vidz/types';
 import { test, expect } from './fixtures';
@@ -13,6 +12,27 @@ async function send(extensionPage: Page, message: object) {
   return extensionPage.evaluate((m) => chrome.runtime.sendMessage(m), message);
 }
 
+/**
+ * The .vidz the extension hands to the editor: opens the (stub) editor from
+ * the ready page and reads back the exact file it received.
+ */
+async function receivedProject(context: BrowserContext, ready: Page, demoUrl: string) {
+  await ready.getByText('Editor address').click();
+  await ready.getByRole('textbox').fill(`${demoUrl}editor`);
+  const editorPromise = context.waitForEvent('page', (p) => p.url().includes('/editor'));
+  await ready.getByRole('button', { name: 'Open in editor' }).click();
+  const editor = await editorPromise;
+  await expect(editor.locator('#out')).toHaveText(/^got .*\.vidz \d+ from chrome-extension:\/\//);
+  const base64 = await editor.evaluate(async () => {
+    const file = (window as unknown as { receivedFile: Blob }).receivedFile;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = '';
+    for (const b of bytes) binary += String.fromCharCode(b);
+    return btoa(binary);
+  });
+  return Buffer.from(base64, 'base64');
+}
+
 async function startRecording(extensionPage: Page, url: string) {
   const result = await extensionPage.evaluate(async (u) => {
     const [tab] = await chrome.tabs.query({ url: u });
@@ -21,7 +41,7 @@ async function startRecording(extensionPage: Page, url: string) {
   expect(result).toEqual({ ok: true });
 }
 
-test('records a tab with its events and produces a valid .vidz', async ({ context, extensionPage, demoUrl }, testInfo) => {
+test('records a tab with its events and hands the editor a valid project', async ({ context, extensionPage, demoUrl }) => {
   const demo = await context.newPage();
   await demo.goto(demoUrl);
   await demo.bringToFront();
@@ -51,12 +71,12 @@ test('records a tab with its events and produces a valid .vidz', async ({ contex
   await expect(ready.getByTestId('recording-facts')).toContainText('3 clicks tracked');
   expect(await send(extensionPage, { to: 'background', type: 'status' })).toEqual({ state: 'idle' });
 
-  const [download] = await Promise.all([ready.waitForEvent('download'), ready.getByRole('link', { name: 'Save .vidz' }).click()]);
-  expect(download.suggestedFilename()).toMatch(/^demo-page-\d{4}-\d{2}-\d{2}-\d{4}\.vidz$/);
-  const file = testInfo.outputPath('rec.vidz');
-  await download.saveAs(file);
+  // The ready page offers the plain video, not a project file.
+  await expect(ready.getByRole('link', { name: 'Download video' })).toBeVisible();
+  await expect(ready.getByText('.vidz')).toHaveCount(0);
 
-  const entries = await readZip(new Blob([new Uint8Array(readFileSync(file))]));
+  const handedOver = await receivedProject(context, ready, demoUrl);
+  const entries = await readZip(new Blob([new Uint8Array(handedOver)]));
   const manifest = JSON.parse(await entries.get('manifest.json')!.text()) as VidzManifest;
   expect(manifest).toMatchObject({ format: 'vidzart-project', createdBy: { app: 'vidzart-extension' } });
   const project = JSON.parse(await entries.get(manifest.files.project)!.text()) as VidzProject;
@@ -144,7 +164,7 @@ test('refuses to start twice', async ({ context, extensionPage, demoUrl }) => {
   expect(again).toEqual({ ok: false, error: 'Already recording.' });
 });
 
-test('keeps logging after the recorded page navigates', async ({ context, extensionPage, demoUrl }, testInfo) => {
+test('keeps logging after the recorded page navigates', async ({ context, extensionPage, demoUrl }) => {
   const demo = await context.newPage();
   await demo.goto(demoUrl);
   await startRecording(extensionPage, demoUrl);
@@ -159,10 +179,7 @@ test('keeps logging after the recorded page navigates', async ({ context, extens
   await send(extensionPage, { to: 'background', type: 'stop' });
   const ready = await readyPromise;
   await expect(ready.getByTestId('recording-facts')).toContainText('2 clicks tracked');
-  const [download] = await Promise.all([ready.waitForEvent('download'), ready.getByRole('link', { name: 'Save .vidz' }).click()]);
-  const file = testInfo.outputPath('nav.vidz');
-  await download.saveAs(file);
-  const entries = await readZip(new Blob([new Uint8Array(readFileSync(file))]));
+  const entries = await readZip(new Blob([new Uint8Array(await receivedProject(context, ready, demoUrl))]));
   const events = JSON.parse(await entries.get('events.json')!.text()) as VidzEvents;
   // The new logger announces the viewport with a resize event.
   expect(events.events.filter((e) => e.type === 'resize').length).toBeGreaterThanOrEqual(2);
